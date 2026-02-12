@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Pencil, Trash2, Link as LinkIcon, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { QRCode } from "@/lib/qr-store"
@@ -12,6 +13,12 @@ interface QRCardProps {
 }
 
 export function QRCard({ qr, onEdit, onDelete }: QRCardProps) {
+  const [baseUrl, setBaseUrl] = useState("https://reqr.app")
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+  }, [])
+
   const displayUrl =
     qr.url.length > 22 ? qr.url.slice(0, 22) + "..." : qr.url
 
@@ -46,7 +53,7 @@ export function QRCard({ qr, onEdit, onDelete }: QRCardProps) {
         <div className="rounded-lg bg-card p-2 shadow-sm">
           <QRCodeSVG
             id={`qr-code-${qr.id}`}
-            value={qr.url || "https://reqr.app"}
+            value={`${baseUrl}/r/${qr.id}`}
             size={80}
             bgColor="hsl(0, 0%, 100%)"
             fgColor="hsl(222, 47%, 11%)"

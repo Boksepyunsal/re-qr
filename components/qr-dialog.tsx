@@ -24,8 +24,13 @@ interface QRDialogProps {
 export function QRDialog({ open, onOpenChange, editingQR }: QRDialogProps) {
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
+  const [baseUrl, setBaseUrl] = useState("https://reqr.app")
 
   const isEditing = !!editingQR
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+  }, [])
 
   useEffect(() => {
     if (editingQR) {
@@ -48,7 +53,9 @@ export function QRDialog({ open, onOpenChange, editingQR }: QRDialogProps) {
     onOpenChange(false)
   }
 
-  const previewValue = url.trim() || "https://reqr.app"
+  const previewValue = isEditing && editingQR 
+    ? `${baseUrl}/r/${editingQR.id}` 
+    : (url.trim() || "https://reqr.app")
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,7 +82,7 @@ export function QRDialog({ open, onOpenChange, editingQR }: QRDialogProps) {
             </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
-              Preview updates automatically
+              {isEditing ? "Dynamic QR (Redirects to URL)" : "Preview updates automatically"}
             </p>
           </div>
 
