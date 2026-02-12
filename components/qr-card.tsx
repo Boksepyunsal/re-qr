@@ -1,7 +1,6 @@
 "use client"
 
-import { Pencil, Trash2, Link as LinkIcon } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { Pencil, Trash2, Link as LinkIcon, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { QRCode } from "@/lib/qr-store"
 import QRCodeSVG from "react-qr-code"
@@ -12,23 +11,33 @@ interface QRCardProps {
   onDelete: (id: string) => void
 }
 
-const statusColorMap: Record<QRCode["status"], { bg: string; text: string; dot: string }> = {
-  active: {
-    bg: "bg-success/10",
-    text: "text-success",
-    dot: "bg-success",
-  },
-  paused: {
-    bg: "bg-muted",
-    text: "text-muted-foreground",
-    dot: "bg-muted-foreground",
-  },
-}
-
 export function QRCard({ qr, onEdit, onDelete }: QRCardProps) {
-  const colors = statusColorMap[qr.status]
   const displayUrl =
     qr.url.length > 22 ? qr.url.slice(0, 22) + "..." : qr.url
+
+  const handleDownload = () => {
+    const svg = document.getElementById(`qr-code-${qr.id}`)
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    const img = new Image()
+    
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx?.drawImage(img, 0, 0)
+      const pngFile = canvas.toDataURL("image/png")
+      
+      const downloadLink = document.createElement("a")
+      downloadLink.download = `${qr.title || "qrcode"}.png`
+      downloadLink.href = pngFile
+      downloadLink.click()
+    }
+
+    img.src = "data:image/svg+xml;base64," + btoa(svgData)
+  }
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -36,6 +45,7 @@ export function QRCard({ qr, onEdit, onDelete }: QRCardProps) {
       <div className="flex items-center justify-center bg-muted/50 px-4 py-5">
         <div className="rounded-lg bg-card p-2 shadow-sm">
           <QRCodeSVG
+            id={`qr-code-${qr.id}`}
             value={qr.url || "https://reqr.app"}
             size={80}
             bgColor="hsl(0, 0%, 100%)"
@@ -53,13 +63,6 @@ export function QRCard({ qr, onEdit, onDelete }: QRCardProps) {
           <LinkIcon className="h-3 w-3 shrink-0" />
           <span className="truncate">{displayUrl}</span>
         </div>
-        <Badge
-          variant="secondary"
-          className={`w-fit border-0 text-[10px] font-semibold uppercase ${colors.bg} ${colors.text}`}
-        >
-          <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${colors.dot}`} />
-          {qr.status}
-        </Badge>
       </div>
 
       {/* Actions */}
@@ -72,6 +75,16 @@ export function QRCard({ qr, onEdit, onDelete }: QRCardProps) {
           aria-label={`Edit ${qr.title}`}
         >
           <Pencil className="h-4 w-4" />
+        </Button>
+        <div className="h-5 w-px bg-border" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-10 flex-1 rounded-none text-muted-foreground hover:text-primary"
+          onClick={handleDownload}
+          aria-label={`Download ${qr.title}`}
+        >
+          <Download className="h-4 w-4" />
         </Button>
         <div className="h-5 w-px bg-border" />
         <Button

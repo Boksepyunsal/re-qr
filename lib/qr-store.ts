@@ -1,101 +1,100 @@
+import { supabase } from "./supabase"
+
 export interface QRCode {
   id: string
   title: string
   url: string
-  status: "active" | "paused"
-  scans: number
-  createdAt: string
+  created_at: string
+  user_id: string
 }
 
-// Client-side mock store for demo purposes
-const INITIAL_QR_CODES: QRCode[] = [
-  {
-    id: "1",
-    title: "Summer Promo",
-    url: "https://myshop.com/summer-2023",
-    status: "active",
-    scans: 3420,
-    createdAt: "2025-06-15",
-  },
-  {
-    id: "2",
-    title: "Fall Menu PDF",
-    url: "https://cafe.io/menu-2023",
-    status: "active",
-    scans: 2810,
-    createdAt: "2025-09-01",
-  },
-  {
-    id: "3",
-    title: "Guest WiFi",
-    url: "WPA2:GuestAccess",
-    status: "paused",
-    scans: 4105,
-    createdAt: "2025-03-20",
-  },
-  {
-    id: "4",
-    title: "Feedback Form",
-    url: "https://forms.gle/xyz123",
-    status: "active",
-    scans: 2115,
-    createdAt: "2025-11-10",
-  },
-]
-
-let qrCodes = [...INITIAL_QR_CODES]
+let qrCodes: QRCode[] = []
 let listeners: Array<() => void> = []
 
-// Cached snapshots - only updated when data changes
-let cachedQRCodes: QRCode[] = qrCodes
-let cachedTotalScans: number = qrCodes.reduce((sum, qr) => sum + qr.scans, 0)
-let cachedActiveCount: number = qrCodes.filter((qr) => qr.status === "active").length
-
-function updateSnapshots() {
-  cachedQRCodes = qrCodes
-  cachedTotalScans = qrCodes.reduce((sum, qr) => sum + qr.scans, 0)
-  cachedActiveCount = qrCodes.filter((qr) => qr.status === "active").length
-}
-
 function notifyListeners() {
-  updateSnapshots()
   listeners.forEach((l) => l())
 }
 
 export function getQRCodes() {
-  return cachedQRCodes
+  return qrCodes
 }
 
-export function getTotalScans() {
-  return cachedTotalScans
+export async function loadQRCodes() {
+  const { data, error } = await supabase
+    .from("qr_codes")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error loading QR codes:", error)
+    return
+  }
+
+  if (data) {
+    qrCodes = data
+    notifyListeners()
+  }
 }
 
-export function getActiveCount() {
-  return cachedActiveCount
-}
+export async function addQRCode(title: string, url: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    console.error("User not logged in")
+    return
+  }
 
-export function addQRCode(title: string, url: string): QRCode {
-  const newQR: QRCode = {
-    id: Date.now().toString(),
+  const newQR = {
     title,
     url,
-    status: "active",
-    scans: 0,
-    createdAt: new Date().toISOString().split("T")[0],
+    user_id: user.id,
   }
-  qrCodes = [newQR, ...qrCodes]
-  notifyListeners()
-  return newQR
+
+  const { data, error } = await supabase
+    .from("qr_codes")
+    .insert([newQR])
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error adding QR code:", error)
+    return
+  }
+
+  if (data) {
+    qrCodes = [data, ...qrCodes]
+    notifyListeners()
+  }
 }
 
-export function updateQRCode(id: string, title: string, url: string) {
+export async function updateQRCode(id: string, title: string, url: string) {
+  const { error } = await supabase
+    .from("qr_codes")
+    .update({ title, url })
+    .eq("id", id)
+
+  if (error) {
+    console.error("Error updating QR code:", error)
+    return
+  }
+
   qrCodes = qrCodes.map((qr) =>
     qr.id === id ? { ...qr, title, url } : qr
   )
   notifyListeners()
 }
 
-export function deleteQRCode(id: string) {
+export async function deleteQRCode(id: string) {
+  const { error } = await supabase
+    .from("qr_codes")
+    .delete()
+    .eq("id", id)
+
+  if (error) {
+    console.error("Error deleting QR code:", error)
+    return
+  }
+
   qrCodes = qrCodes.filter((qr) => qr.id !== id)
   notifyListeners()
 }

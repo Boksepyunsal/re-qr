@@ -3,6 +3,7 @@
 import { QrCode, HelpCircle, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import QRCode from "react-qr-code"
+import Link from "next/link" // Import Link
 
 interface LandingScreenProps {
   onLogin: () => void
@@ -63,13 +64,13 @@ export function LandingScreen({ onLogin }: LandingScreenProps) {
 
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
             By logging in, you agree to our{" "}
-            <button className="font-medium text-primary underline underline-offset-2 hover:text-primary/80">
+            <Link href="/terms" className="font-medium text-primary underline underline-offset-2 hover:text-primary/80">
               Terms of Service
-            </button>{" "}
+            </Link>{" "}
             and{" "}
-            <button className="font-medium text-primary underline underline-offset-2 hover:text-primary/80">
+            <Link href="/privacy" className="font-medium text-primary underline underline-offset-2 hover:text-primary/80">
               Privacy Policy
-            </button>
+            </Link>
             .
           </p>
         </div>
